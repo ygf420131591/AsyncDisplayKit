@@ -31,8 +31,9 @@ static CGFloat const kASDKLogoAspectRatio = 2.79;
   return CGSizeZero;
 }
 
-- (UIImage *)placeholderImageForSize:(CGSize)size
+- (UIImage *)placeholderImage
 {
+  CGSize size = self.calculatedSize;
   UIGraphicsBeginImageContext(size);
   [[UIColor colorWithWhite:0.9 alpha:1] setStroke];
 

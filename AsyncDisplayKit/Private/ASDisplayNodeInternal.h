@@ -57,7 +57,7 @@ void ASDisplayNodePerformBlockOnMainThread(void (^block)());
   CALayer *_placeholderLayer;
 
   // keeps track of nodes/subnodes that have not finished display, used with placeholders
-  NSUInteger _pendingDisplays;
+  NSMutableSet *_pendingDisplayNodes;
 
   _ASPendingState *_pendingViewState;
 
@@ -116,9 +116,6 @@ void ASDisplayNodePerformBlockOnMainThread(void (^block)());
 - (void)__incrementVisibilityNotificationsDisabled;
 - (void)__decrementVisibilityNotificationsDisabled;
 
-// Used to notify supernodes that subnodes (or any dependent node) finished or cancelled display
-- (void)_decrementPendingDisplays;
-
 // Call willEnterHierarchy if necessary and set inHierarchy = YES if visibility notifications are enabled on all of its parents
 - (void)__enterHierarchy;
 // Call didExitHierarchy if necessary and set inHierarchy = NO if visibility notifications are enabled on all of its parents
@@ -131,6 +128,9 @@ void ASDisplayNodePerformBlockOnMainThread(void (^block)());
 - (ASDisplayNode *)__rasterizedContainerNode;
 
 @property (nonatomic, assign) CGFloat contentsScaleForDisplay;
+
+// Defined here since this is declared in the Subclasses category
+@property (nonatomic, assign) BOOL placeholderEnabled;
 
 @end
 

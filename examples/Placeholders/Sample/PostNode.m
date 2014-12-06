@@ -53,8 +53,9 @@
   return self;
 }
 
-- (UIImage *)placeholderImageForSize:(CGSize)size
+- (UIImage *)placeholderImage
 {
+  CGSize size = self.calculatedSize;
   UIGraphicsBeginImageContext(size);
   [[UIColor colorWithWhite:0.9 alpha:1] setFill];
   UIRectFill((CGRect){CGPointZero, size});

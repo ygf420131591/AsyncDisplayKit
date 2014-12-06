@@ -184,6 +184,8 @@ void ASDisplayNodePerformBlockOnMainThread(void (^block)())
   _replaceAsyncSentinel = nil;
 
   _displaySentinel = nil;
+
+  _pendingDisplayNodes = nil;
 }
 
 #pragma mark - UIResponder overrides
@@ -271,7 +273,7 @@ void ASDisplayNodePerformBlockOnMainThread(void (^block)())
     [self didLoad];
   }
 
-  if (self.isPlaceholderEnabled) {
+  if (self.placeholderEnabled) {
     _placeholderLayer = [CALayer layer];
     [_layer addSublayer:_placeholderLayer];
   }
@@ -371,9 +373,9 @@ void ASDisplayNodePerformBlockOnMainThread(void (^block)())
   ASDisplayNodeAssertTrue(_size.width >= 0.0);
   ASDisplayNodeAssertTrue(_size.height >= 0.0);
 
-  // this is the earliest we can grab the placeholder
-  if (self.isPlaceholderEnabled && [self displaysAsynchronously] && !_placeholderImage) {
-    _placeholderImage = [self placeholderImageForSize:_size];
+  // we generate placeholders at measure: time so that a node is garaunteed to have a placeholder ready to go
+  if (self.placeholderEnabled && [self displaysAsynchronously] && !_placeholderImage) {
+    _placeholderImage = [self placeholderImage];
     _placeholderLayer.contents = (id)_placeholderImage.CGImage;
   }
 
@@ -460,8 +462,9 @@ void ASDisplayNodePerformBlockOnMainThread(void (^block)())
 {
   ASDisplayNodeAssertMainThread();
   ASDN::MutexLocker l(_propertyLock);
-  if (CGRectEqualToRect(_layer.bounds, CGRectZero))
+  if (CGRectEqualToRect(_layer.bounds, CGRectZero)) {
     return;     // Performing layout on a zero-bounds view often results in frame calculations with negative sizes after applying margins, which will cause measure: on subnodes to assert.
+  }
   _placeholderLayer.frame = _layer.bounds;
   [self layout];
   [self layoutDidFinish];
@@ -622,7 +625,7 @@ static inline CATransform3D _calculateTransformFromReferenceToTarget(ASDisplayNo
 
 - (void)didDisplayAsyncLayer:(_ASDisplayLayer *)layer
 {
-  [self _decrementPendingDisplays];
+  [self _pendingNodeDidDisplay:self];
 
   // Subclass hook.
   [self displayDidFinish];
@@ -1014,8 +1017,7 @@ static NSInteger incrementIfFound(NSInteger i) {
   if (!self.inHierarchy && !_flags.visibilityNotificationsDisabled && ![self __hasParentWithVisibilityNotificationsDisabled]) {
     self.inHierarchy = YES;
     _flags.isEnteringHierarchy = YES;
-    [self _setupPendingDisplays];
-
+    [self _setupPendingDisplayNodes];
     if (self.shouldRasterizeDescendants) {
       // Nodes that are descendants of a rasterized container do not have views or layers, and so cannot receive visibility notifications directly via orderIn/orderOut CALayer actions.  Manually send visibility notifications to rasterized descendants.
       [self _recursiveWillEnterHierarchy];
@@ -1108,41 +1110,53 @@ static NSInteger incrementIfFound(NSInteger i) {
   _supernode = supernode;
 }
 
-- (void)_setupPendingDisplays
+// Prepare the _pendingDisplayNodes with a set of nodes that the current node needs to display in order to take some
+// action. The current node will add itself to the set (circular reference) so make sure to nil the set on -dealloc.
+- (void)_setupPendingDisplayNodes
 {
   ASDN::MutexLocker l(_propertyLock);
 
+  if (!_pendingDisplayNodes) {
+    _pendingDisplayNodes = [[NSMutableSet alloc] init];
+  }
+
   for (ASDisplayNode *node in _subnodes) {
-    if ([node _implementsDrawing]) {
-      _pendingDisplays++;
+    if ([node _implementsDisplay]) {
+      [_pendingDisplayNodes addObject:node];
     }
   }
 
-  if ([self _implementsDrawing]) {
-    _pendingDisplays++;
+  if ([self _implementsDisplay]) {
+    [_pendingDisplayNodes addObject:self];
   }
 }
 
-- (void)_decrementPendingDisplays
+// Notify that a node that was pending display finished
+// The node sending the message should usually be passed as the parameter, similar to the delegation pattern.
+- (void)_pendingNodeDidDisplay:(ASDisplayNode *)node
 {
   ASDN::MutexLocker l(_propertyLock);
-  ASDisplayNodeAssert(_pendingDisplays > 0, @"all subnodes have messaged that they've displayed. something is overcalling");
-  _pendingDisplays--;
 
-  if (_pendingDisplays == 0 && _placeholderEnabled && _placeholderLayer.superlayer) {
+  [_pendingDisplayNodes removeObject:node];
+
+  // only trampoline if there is a placeholder and nodes are done displaying
+  if (self.placeholderEnabled && [self _pendingDisplayNodesHaveFinished] && _placeholderLayer.superlayer) {
     dispatch_async(dispatch_get_main_queue(), ^{
       [_placeholderLayer removeFromSuperlayer];
     });
   }
 }
 
-- (BOOL)_pendingDisplaysHaveFinished
+// Helper method to check that all nodes that the current node is waiting to display are finished
+// Use this method to check to remove any placeholder layers
+- (BOOL)_pendingDisplayNodesHaveFinished
 {
   ASDN::MutexLocker l(_propertyLock);
-  return _pendingDisplays == 0;
+  return _pendingDisplayNodes.count == 0;
 }
 
-- (BOOL)_implementsDrawing
+// Helper method to summarize whether or not the node run through the display process
+- (BOOL)_implementsDisplay
 {
   return _flags.implementsDrawRect == YES || _flags.implementsImageDisplay == YES;
 }
@@ -1167,7 +1181,7 @@ static NSInteger incrementIfFound(NSInteger i) {
   return _constrainedSize;
 }
 
-- (UIImage *)placeholderImageForSize:(CGSize)size
+- (UIImage *)placeholderImage
 {
   return nil;
 }
@@ -1226,9 +1240,9 @@ static NSInteger incrementIfFound(NSInteger i) {
 
 - (void)displayDidFinish
 {
-  [_supernode _decrementPendingDisplays];
+  [_supernode _pendingNodeDidDisplay:self];
 
-  if (_placeholderLayer && [self _pendingDisplaysHaveFinished]) {
+  if (_placeholderLayer && [self _pendingDisplayNodesHaveFinished]) {
     [_placeholderLayer removeFromSuperlayer];
   }
 }
@@ -1463,8 +1477,8 @@ static void _recursivelySetDisplaySuspended(ASDisplayNode *node, CALayer *layer,
 
   self.asyncLayer.displaySuspended = flag;
 
-  if (flag && [self _implementsDrawing]) {
-    [_supernode _decrementPendingDisplays];
+  if (flag && [self _implementsDisplay]) {
+    [_supernode _pendingNodeDidDisplay:self];
   }
 }
 

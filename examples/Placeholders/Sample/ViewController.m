@@ -15,6 +15,7 @@
 
 #import "PostNode.h"
 #import "SlowpokeImageNode.h"
+#import <AsyncDisplayKit/ASDisplayNode+Subclasses.h>
 
 @interface ViewController ()
 {

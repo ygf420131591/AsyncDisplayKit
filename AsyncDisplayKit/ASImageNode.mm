@@ -141,6 +141,14 @@
   return _tint;
 }
 
+- (void)setPlaceholderColor:(UIColor *)placeholderColor
+{
+  _placeholderColor = placeholderColor;
+
+  // prevent placeholders if we don't have a color
+  self.placeholderEnabled = placeholderColor != nil;
+}
+
 - (NSObject *)drawParametersForAsyncLayer:(_ASDisplayLayer *)layer;
 {
   BOOL hasValidCropBounds = _cropEnabled && !CGRectIsNull(_cropDisplayBounds) && !CGRectIsEmpty(_cropDisplayBounds);
@@ -262,8 +270,9 @@
   }
 }
 
-- (UIImage *)placeholderImageForSize:(CGSize)size
+- (UIImage *)placeholderImage
 {
+  CGSize size = self.calculatedSize;
   UIGraphicsBeginImageContext(size);
   [self.placeholderColor setFill];
   UIRectFill((CGRect){CGPointZero, size});

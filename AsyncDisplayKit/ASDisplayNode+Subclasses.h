@@ -303,6 +303,32 @@
 - (void)reclaimMemory ASDISPLAYNODE_REQUIRES_SUPER;
 
 
+/** @name Placeholders */
+
+/**
+ * @abstract Optionally provide an image to serve as the placeholder for the backing store while the contents are being
+ * displayed.
+ *
+ * @discussion
+ * Subclasses may override this method and return an image to use as the placeholder. Take caution as there may be a
+ * time and place where this method is called on a background thread. Note that -[UIImage imageNamed:] is not thread
+ * safe when using image assets.
+ *
+ * To retrieve the CGSize to do any image drawing, use the node's calculatedSize property.
+ *
+ * Defaults to nil.
+ */
+- (UIImage *)placeholderImage;
+
+/**
+ * @abstract Toggle displaying a placeholder over the node that covers content until the node and all subnodes are
+ * displayed.
+ *
+ * @discussion Defaults to NO.
+ */
+@property (nonatomic, assign) BOOL placeholderEnabled;
+
+
 /** @name Description */
 
 

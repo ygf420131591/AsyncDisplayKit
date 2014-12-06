@@ -672,8 +672,9 @@ ASDISPLAYNODE_INLINE CGFloat ceilPixelValue(CGFloat f)
 
 #pragma mark - Placeholders
 
-- (UIImage *)placeholderImageForSize:(CGSize)size
+- (UIImage *)placeholderImage
 {
+  CGSize size = self.calculatedSize;
   UIGraphicsBeginImageContext(size);
   [self.placeholderColor setFill];
 
