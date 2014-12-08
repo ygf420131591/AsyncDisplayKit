@@ -672,15 +672,35 @@ ASDISPLAYNODE_INLINE CGFloat ceilPixelValue(CGFloat f)
 
 #pragma mark - Placeholders
 
+- (void)setPlaceholderColor:(UIColor *)placeholderColor
+{
+  _placeholderColor = placeholderColor;
+
+  // prevent placeholders if we don't have a color
+  self.placeholderEnabled = placeholderColor != nil;
+}
+
 - (UIImage *)placeholderImage
 {
   CGSize size = self.calculatedSize;
   UIGraphicsBeginImageContext(size);
   [self.placeholderColor setFill];
 
-  CGRect bounds = (CGRect){CGPointZero, size};
-  CGRect fillBounds = UIEdgeInsetsInsetRect(bounds, self.placeholderInsets);
-  UIRectFill(fillBounds);
+  ASTextNodeRenderer *renderer = [self _renderer];
+  NSRange textRange = [renderer visibleRange];
+
+  // cap height is both faster and creates less subpixel blending
+  NSArray *lineRects = [self _rectsForTextRange:textRange measureOption:ASTextNodeRendererMeasureOptionLineHeight];
+
+  // fill each line with the placeholder color
+  for (NSValue *rectValue in lineRects) {
+    CGRect lineRect = [rectValue CGRectValue];
+    CGRect fillBounds = UIEdgeInsetsInsetRect(lineRect, self.placeholderInsets);
+
+    if (fillBounds.size.width > 0.0 && fillBounds.size.height > 0.0) {
+      UIRectFill(fillBounds);
+    }
+  }
 
   UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
   UIGraphicsEndImageContext();

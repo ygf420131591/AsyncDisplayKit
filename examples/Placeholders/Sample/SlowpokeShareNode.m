@@ -18,7 +18,7 @@ static CGSize const kIconSize = (CGSize){ 60.0, 17.0 };
 
 + (void)drawRect:(CGRect)bounds withParameters:(id<NSObject>)parameters isCancelled:(asdisplaynode_iscancelled_block_t)isCancelledBlock isRasterizing:(BOOL)isRasterizing
 {
-  usleep( (long)(0.8 * USEC_PER_SEC) ); // artificial delay of 1.2s
+  usleep( (long)(0.8 * USEC_PER_SEC) ); // artificial delay of 0.8s
 
   [[UIColor colorWithRed:0.f green:122/255.f blue:1.f alpha:1.f] setStroke];
 

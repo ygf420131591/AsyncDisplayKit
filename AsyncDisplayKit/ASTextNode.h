@@ -77,7 +77,7 @@ typedef NS_ENUM(NSUInteger, ASTextNodeHighlightStyle) {
 @property (nonatomic, strong) UIColor *placeholderColor;
 
 /**
- @abstract Inset the placeholder inside the bounds of the text node.
+ @abstract Inset each line of the placeholder.
  */
 @property (nonatomic, assign) UIEdgeInsets placeholderInsets;
 

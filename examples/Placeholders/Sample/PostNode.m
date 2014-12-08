@@ -9,11 +9,12 @@
 #import "PostNode.h"
 
 #import "SlowpokeShareNode.h"
+#import "SlowpokeTextNode.h"
 #import <AsyncDisplayKit/ASDisplayNode+Subclasses.h>
 
 @interface PostNode ()
 {
-  ASTextNode *_textNode;
+  SlowpokeTextNode *_textNode;
   SlowpokeShareNode *_needyChildNode; // this node slows down display
 }
 
@@ -36,8 +37,8 @@
   if (!(self = [super init]))
     return nil;
 
-  _textNode = [[ASTextNode alloc] init];
-  _textNode.placeholderInsets = UIEdgeInsetsMake(20.0, 20.0, 20.0, 20.0);
+  _textNode = [[SlowpokeTextNode alloc] init];
+  _textNode.placeholderInsets = UIEdgeInsetsMake(3.0, 0.0, 3.0, 0.0);
   _textNode.placeholderEnabled = YES;
 
   NSString *text = @"Etiam porta sem malesuada magna mollis euismod. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia odio sem nec elit. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh.";
@@ -59,9 +60,6 @@
   UIGraphicsBeginImageContext(size);
   [[UIColor colorWithWhite:0.9 alpha:1] setFill];
   UIRectFill((CGRect){CGPointZero, size});
-
-  // TODO: add "Rendering..." text in the middle
-
   UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
   UIGraphicsEndImageContext();
   return image;

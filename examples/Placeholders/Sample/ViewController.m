@@ -85,8 +85,9 @@
 
   _postNode = [[PostNode alloc] init];
 
+  // change to NO to see text placeholders, change to YES to see the parent placeholder
   // this placeholder will cover all subnodes while they are displaying, just a like a stage curtain!
-  _postNode.placeholderEnabled = YES;
+  _postNode.placeholderEnabled = NO;
 
   [self.view addSubview:_imageNode.view];
   [self.view addSubview:_postNode.view];
